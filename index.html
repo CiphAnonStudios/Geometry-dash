@@ -2,7 +2,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Geometry Dash Style Game</title>
+  <title>Advanced Geometry Dash Style Game</title>
   <style>
     * {
       margin: 0;
@@ -56,11 +56,14 @@ canvas {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    const gravity = 0.8;
+    const gravity = 0.9;
     const jumpForce = -15;
     const groundHeight = 120;
 
-    let gameSpeed = 7;
+    let gameSpeed = 8;
+    let particles = [];
+    let screenShake = 0;
+    let levelProgress = 0;
     let score = 0;
     let gameOver = false;
 
@@ -191,18 +194,31 @@ canvas {
     }
 
     function update() {
+      ctx.save();
+
+      if (screenShake > 0) {
+        const shakeX = (Math.random() - 0.5) * screenShake;
+        const shakeY = (Math.random() - 0.5) * screenShake;
+        ctx.translate(shakeX, shakeY);
+        screenShake *= 0.9;
+      }
+
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+      drawBackground();
       drawGround();
 
       player.update();
       player.draw();
+      drawTrail();
 
       obstacles.forEach((obstacle, index) => {
         obstacle.update();
         obstacle.draw();
 
         if (collision(player, obstacle)) {
+          createExplosion(player.x + player.width / 2, player.y + player.height / 2);
+          screenShake = 20;
           gameOver = true;
           document.getElementById('restartText').style.display = 'block';
         }
@@ -219,7 +235,13 @@ canvas {
       });
 
       if (!gameOver) {
+        updateParticles();
+
+        levelProgress += 0.005;
         requestAnimationFrame(update);
+      }
+
+      ctx.restore();
       }
     }
 
@@ -241,6 +263,56 @@ canvas {
     window.addEventListener('touchstart', () => {
       player.jump();
     });
+
+    function drawBackground() {
+      const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      gradient.addColorStop(0, `hsl(${200 + Math.sin(levelProgress) * 40}, 70%, 18%)`);
+      gradient.addColorStop(1, '#111');
+
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      for (let i = 0; i < 40; i++) {
+        ctx.fillStyle = 'rgba(255,255,255,0.15)';
+        ctx.fillRect((i * 200 - (Date.now() * 0.05 % 200)), 100 + Math.sin(i + levelProgress) * 50, 4, 4);
+      }
+    }
+
+    function drawTrail() {
+      ctx.fillStyle = 'rgba(0,245,255,0.35)';
+      ctx.fillRect(player.x - 15, player.y + 10, 15, 30);
+    }
+
+    function createExplosion(x, y) {
+      for (let i = 0; i < 35; i++) {
+        particles.push({
+          x,
+          y,
+          vx: (Math.random() - 0.5) * 14,
+          vy: (Math.random() - 0.5) * 14,
+          size: Math.random() * 6 + 2,
+          life: 1
+        });
+      }
+    }
+
+    function updateParticles() {
+      particles.forEach((p, index) => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life -= 0.02;
+        p.size *= 0.98;
+
+        ctx.globalAlpha = p.life;
+        ctx.fillStyle = '#00f5ff';
+        ctx.fillRect(p.x, p.y, p.size, p.size);
+        ctx.globalAlpha = 1;
+
+        if (p.life <= 0) {
+          particles.splice(index, 1);
+        }
+      });
+    }
 
     window.addEventListener('resize', () => {
       canvas.width = window.innerWidth;
