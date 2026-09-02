@@ -48,6 +48,13 @@ canvas {
   padding: 30px 45px;
   border-radius: 25px;
 }
+
+  #logo {
+    height:50px;
+    width:auto;
+    top:;
+    left:;
+  }
 </style></head>
 <body><div id="ui">
   Score: <span id="score">0</span><br>
@@ -56,7 +63,7 @@ canvas {
   GAME OVER<br><br>
   Press SPACE To Restart
 </div><canvas id="game"></canvas>
-
+<img class="logo" src="logo.png">
 <script>
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
